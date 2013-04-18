@@ -102,7 +102,7 @@ class MarkOnlyTest < Test::Unit::TestCase
     assert_equal 1, model.class.count
   end
 
-  def test_default_scope_for_has_many_relationships
+  def test_has_many_relationships
     parent = ParentModel.create
     assert_equal 0, parent.related_models.count
 
@@ -115,7 +115,7 @@ class MarkOnlyTest < Test::Unit::TestCase
     assert_equal 1, parent.related_models.count
   end
 
-  def test_default_scope_for_has_many_through_relationships
+  def test_has_many_through_relationships
     employer = Employer.create
     employee = Employee.create
     assert_equal 0, employer.jobs.count
@@ -169,17 +169,6 @@ class MarkOnlyTest < Test::Unit::TestCase
 
     assert_equal ACTIVE_MARK, model.some_marked_column
     assert_equal false, model.destroyed?
-  end
-
-  def test_default_value
-    model = MarkOnlyModel.new
-    assert_equal ACTIVE_MARK, model.some_marked_column
-    model.some_marked_column = nil
-    model.save
-    assert_equal ACTIVE_MARK, model.some_marked_column
-    model.some_marked_column = 'other'
-    model.save
-    assert_equal ACTIVE_MARK, model.some_marked_column
   end
 
   def test_real_destroy

@@ -27,7 +27,7 @@ Updating is as simple as `bundle update mark_only`.
 ```ruby
 class AddDeletedAtToClient < ActiveRecord::Migration
   def self.up
-    add_column :clients, :some_column_to_mark, :string
+    add_column :clients, :some_column_to_mark, :string, :default => 'active'
   end
 
   def self.down
@@ -35,6 +35,8 @@ class AddDeletedAtToClient < ActiveRecord::Migration
   end
 end
 ```
+
+Use the active_value as `:default`.
 
 ### Usage
 

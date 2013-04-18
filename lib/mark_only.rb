@@ -19,13 +19,17 @@ module MarkOnly
   end
 
   def delete
-    puts "updating column #{self.mark_only_column} with value #{MarkOnly.deleted_value}"
     update_attribute_or_column(self.mark_only_column, MarkOnly.deleted_value) if !deleted? && persisted?
+  rescue => e
+    logger.error("failed to set #{self.mark_only_column} to #{MarkOnly.deleted_value} in #{self}", e)
+    raise e
   end
 
   def restore!
-    puts "updating column #{self.mark_only_column} with value #{MarkOnly.active_value}"
     update_attribute_or_column self.mark_only_column, MarkOnly.active_value
+  rescue => e
+    logger.error("failed to set #{self.mark_only_column} to #{MarkOnly.active_value} in #{self}", e)
+    raise e
   end
 
   def destroyed?
@@ -34,10 +38,6 @@ module MarkOnly
   alias :deleted? :destroyed?
 
   private
-
-  def default_mark_only_column
-    self.send("#{self.mark_only_column}=".to_sym, MarkOnly.active_value) unless self.send(self.mark_only_column.to_sym) == MarkOnly.deleted_value
-  end
 
   # Rails 3.1 adds update_column. Rails > 3.2.6 deprecates update_attribute, gone in Rails 4.
   def update_attribute_or_column(*args)
@@ -52,8 +52,7 @@ end
 
 class ActiveRecord::Base
   def self.mark_only(col_name)
-    after_initialize :default_mark_only_column
-    before_save :default_mark_only_column
+    raise "#{self} must call mark_only with a column name!" unless col_name
     class_attribute :mark_only_column, instance_writer: true
     self.mark_only_column = col_name.to_sym
     alias :destroy! :destroy
