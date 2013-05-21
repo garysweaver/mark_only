@@ -7,7 +7,7 @@ Gem::Specification.new do |s|
   s.version     = MarkOnly::VERSION
   s.authors     = ['Gary S. Weaver']
   s.email       = ['garysweaver@gmail.com']
-  s.homepage    = 'https://github.com/garysweaver/mark_only'
+  s.homepage    = 'https://github.com/FineLinePrototyping/mark_only'
   s.summary     = "A fork of Paranoia (by Ryan Bigg and others) that updates a specified column with an pre-configured value on delete/destroy."
   s.description = "A fork of Paranoia (by Ryan Bigg and others) that updates a specified column with an pre-configured value on destroy, and does no scoping. Supports destroy hooks."
   s.required_rubygems_version = ">= 1.3.6"
