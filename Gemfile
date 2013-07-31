@@ -1,4 +1,7 @@
 source 'https://rubygems.org'
 
-# Specify your gem's dependencies in paranoia.gemspec
 gemspec
+
+gem 'appraisal', '~> 0.5.2'
+gem 'bundler', '>= 1.2.2'
+gem 'sqlite3'

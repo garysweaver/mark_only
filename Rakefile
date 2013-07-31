@@ -1,11 +1,15 @@
-require 'bundler'
-Bundler::GemHelper.install_tasks
+require 'bundler/setup'
+require 'bundler/gem_tasks'
+require 'appraisal'
 
-task :test do
-  load 'test/mark_only_test.rb'
-  #Dir['test/*_test.rb'].each do |testfile|
-  #  load testfile
-  #end
+task :default do |t|
+  if ENV['BUNDLE_GEMFILE'] =~ /gemfiles/
+    load 'test/mark_only_test.rb'
+  else
+    exec 'bundle install && bundle exec rake appraise'
+  end
 end
 
-task :default => :test
+task :appraise => ['appraisal:install'] do |t|
+  exec 'bundle install && bundle exec rake appraisal'
+end

@@ -1,10 +1,16 @@
+[![Build Status](https://secure.travis-ci.org/FineLinePrototyping/mark_only.png?branch=master)][travis] [![Gem Version](https://badge.fury.io/rb/mark_only.png)][badgefury]
+
 # Mark Only
 
-Mark Only is a fork of [Paranoia][paranoia] (by Ryan Bigg and others) with significant changes. It only sets a specified column with a specified value on destroy/delete. Like Paranoia it allows before_destroy, etc. callbacks.
+Want to only mark a column with a value when the record is deleted or destroyed, but not unscope it? Then you're in the right place. If you want the records to be out of scope, look at acts_as_paranoid, paranoid, etc.
 
-However, it does not unscope marked records. This means that anything that attempts to find the record after a destroy will still find it.
+`mark_only` on the model class sets a specified column with a specified value on destroy/delete and disables the ability to `delete`/`destroy` on instance, model class, and via relation, using the default ActiveRecord version of those, and supports destroy callbacks if raise not enabled. `destroy!` in Rails 4 is supported.
 
-To *really* destroy or delete records, use the Paranoia/acts_as_paranoid convention of calling `destroy!` or `delete!`.
+Once a record is marked, `deleted?`/`destroyed?` methods on a retrieved model instance return false.
+
+Tested with ActiveRecord 3.1.x, 3.2.x, and 4.0.x via travis and appraisal.
+
+Code originally based on [Paranoia][paranoia] (by Ryan Bigg and others), but heavily modified.
 
 ## Installation & Usage
 
@@ -44,7 +50,9 @@ Use the active_value as `:default`.
 
 ```ruby
 MarkOnly.configure do
-  self.active_value = 'active'
+  # if true, debug log failed attempts to delete/destroy
+  self.debug = false
+  # the value that should indicate that a record is deleted
   self.deleted_value = 'deleted'
 end
 
@@ -53,6 +61,8 @@ end
 
 #### In your model:
 
+To disallow attempts to delete/destroy and instead update the specified column:
+
 ```ruby
 class Client < ActiveRecord::Base
   mark_only :some_column_to_mark
@@ -61,24 +71,15 @@ class Client < ActiveRecord::Base
 end
 ```
 
-If you want a method to be called on destroy, simply provide a _before\_destroy_ callback:
+## Upgrading
 
-```ruby
-class Client < ActiveRecord::Base
-  mark_only :some_column_to_mark
-
-  before_destroy :some_method
-
-  def some_method
-    # do stuff
-  end
-
-  ...
-end
-```
+* v0.0.1 -> v1.0.x: `restore!` no longer supported; the workaround is to use SQL to change a record's mark column to some value other than MarkOnly.deleted_value. Similarly, if you need to really delete or destroy a row in the database corresponding to the record, use SQL.
 
 ## License
 
-This gem is released under the MIT license.
+This gem is released under the [MIT license][lic].
 
+[lic]: http://github.com/FineLinePrototyping/mark_only/blob/master/LICENSE
 [paranoia]: https://github.com/radar/paranoia
+[travis]: http://travis-ci.org/FineLinePrototyping/mark_only
+[badgefury]: http://badge.fury.io/rb/mark_only

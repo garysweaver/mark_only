@@ -8,14 +8,14 @@ Gem::Specification.new do |s|
   s.authors     = ['Gary S. Weaver']
   s.email       = ['garysweaver@gmail.com']
   s.homepage    = 'https://github.com/FineLinePrototyping/mark_only'
-  s.summary     = "A fork of Paranoia (by Ryan Bigg and others) that updates a specified column with an pre-configured value on delete/destroy."
-  s.description = "A fork of Paranoia (by Ryan Bigg and others) that updates a specified column with an pre-configured value on destroy, and does no scoping. Supports destroy hooks."
+  s.summary     = "Updates a specified column with an pre-configured value on delete/destroy."
+  s.description = "Updates a specified column with an pre-configured value on delete/destroy. Supports destroy hooks."
   s.required_rubygems_version = ">= 1.3.6"
   s.files = Dir['lib/**/*'] + ['Rakefile', 'README.md']
   s.license = 'MIT'
-  s.add_runtime_dependency 'activerecord', '>= 3.0.0'
-  s.add_development_dependency "activerecord", ">= 3.0.0"
-  s.add_development_dependency "bundler", ">= 1.0.0"
-  s.add_development_dependency "sqlite3"
-  s.add_development_dependency "rake", "0.8.7"
+  s.add_runtime_dependency 'activerecord', '>= 3.1'
+  s.add_runtime_dependency 'activesupport', '>= 3.1'
+  s.add_development_dependency 'appraisal'
+  s.add_development_dependency 'sqlite3'
+  s.add_development_dependency 'bundler'
 end
