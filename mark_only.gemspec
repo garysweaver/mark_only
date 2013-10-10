@@ -13,9 +13,6 @@ Gem::Specification.new do |s|
   s.required_rubygems_version = ">= 1.3.6"
   s.files = Dir['lib/**/*'] + ['Rakefile', 'README.md']
   s.license = 'MIT'
-  s.add_runtime_dependency 'activerecord', '>= 3.1'
-  s.add_runtime_dependency 'activesupport', '>= 3.1'
-  s.add_development_dependency 'appraisal'
-  s.add_development_dependency 'sqlite3'
-  s.add_development_dependency 'bundler'
+  s.add_runtime_dependency 'activerecord', '>= 3.1', '< 5'
+  s.add_runtime_dependency 'activesupport', '>= 3.1', '< 5'
 end

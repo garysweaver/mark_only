@@ -2,8 +2,8 @@ PATH
   remote: /Users/gary/github/FineLinePrototyping/mark_only
   specs:
     mark_only (1.0.1)
-      activerecord (>= 3.1)
-      activesupport (>= 3.1)
+      activerecord (>= 3.1, < 5)
+      activesupport (>= 3.1, < 5)
 
 GEM
   remote: https://rubygems.org/
