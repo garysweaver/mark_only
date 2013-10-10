@@ -2,5 +2,4 @@ language: ruby
 rvm:
   - 2.0.0
   - 1.9.3
-install: 'travis_retry bundle install'
-script: 'travis_retry bundle exec rake'
+script: 'rake appraisal:install && rake appraisal'

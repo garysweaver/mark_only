@@ -1,5 +1,5 @@
-['~> 3.1.12', '~> 3.2.14', '~> 4.0.0'].each do |activerecord_version|
-  appraise "activerecord_#{activerecord_version.slice(/\d+\.\d+/)}" do
-    gem 'activerecord', activerecord_version
+[3.1, 3.2, 4.0].each do |version|
+  appraise "activerecord_#{version}" do
+    gem 'activerecord', "~> #{version}"
   end
 end
