@@ -71,6 +71,16 @@ class Client < ActiveRecord::Base
 end
 ```
 
+#### Disabling Globally
+
+If you need to globally disable temporarily so that everything marked as mark_only will destroy/delete instead of work normally, which might be useful in a data cleanup script, use:
+
+```ruby
+MarkOnly.enabled = false
+```
+
+Note: that is an application-wide setting affecting all models that use mark_only, and may allow destruction of data you did not intend to destroy. Please be careful!
+
 ## Upgrading
 
 * v0.0.1 -> v1.0.x: `restore!` no longer supported; the workaround is to use SQL to change a record's mark column to some value other than MarkOnly.deleted_value. Similarly, if you need to really delete or destroy a row in the database corresponding to the record, use SQL.

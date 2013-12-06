@@ -20,6 +20,12 @@ ActiveRecord::Base.connection.execute 'CREATE TABLE employers (id INTEGER NOT NU
 ActiveRecord::Base.connection.execute 'CREATE TABLE employees (id INTEGER NOT NULL PRIMARY KEY, some_marked_column VARCHAR(32))'
 ActiveRecord::Base.connection.execute 'CREATE TABLE jobs (id INTEGER NOT NULL PRIMARY KEY, employer_id INTEGER NOT NULL, employee_id INTEGER NOT NULL, some_marked_column VARCHAR(32))'
 
+class MiniTest::Filter
+  def filter(bt)
+    bt
+  end
+end
+
 class MarkOnlyTest < Test::Unit::TestCase
 
   def setup
@@ -33,6 +39,8 @@ class MarkOnlyTest < Test::Unit::TestCase
     ActiveRecord::Base.connection.execute 'DELETE FROM employers'
     ActiveRecord::Base.connection.execute 'DELETE FROM employees'
     ActiveRecord::Base.connection.execute 'DELETE FROM jobs'
+
+    MarkOnly.enabled = true
   end
 
   # plain/unaltered
@@ -84,6 +92,18 @@ class MarkOnlyTest < Test::Unit::TestCase
     assert_equal 1, ActiveRecord::Base.connection.select_all("SELECT count(*) as c FROM #{model.class.table_name} WHERE id = '#{model.id}' AND some_marked_column = '#{DELETED_MARK}'").first['c']
   end
 
+  def test_mark_only_disabled_instance_delete
+    model = MarkOnlyModel.new
+    assert_equal 0, model.class.count
+    model.save
+    assert_equal 1, model.class.count
+    assert_equal nil, model.some_marked_column
+    MarkOnly.enabled = false
+    model.delete
+    assert_equal 0, model.class.count
+    assert_equal 0, ActiveRecord::Base.connection.select_all("SELECT count(*) as c FROM #{model.class.table_name} WHERE id = '#{model.id}' AND some_marked_column = '#{DELETED_MARK}'").first['c']
+  end
+
   def test_mark_only_instance_destroy
     model = MarkOnlyModel.new
     assert_equal 0, model.class.count
@@ -95,6 +115,18 @@ class MarkOnlyTest < Test::Unit::TestCase
     # won't work unless you reload model: assert_equal DELETED_MARK, model.some_marked_column
     assert_equal DELETED_MARK, model.class.where(id: model.id).first.some_marked_column
     assert_equal 1, ActiveRecord::Base.connection.select_all("SELECT count(*) as c FROM #{model.class.table_name} WHERE id = '#{model.id}' AND some_marked_column = '#{DELETED_MARK}'").first['c']
+  end
+
+  def test_mark_only_disabled_instance_destroy
+    model = MarkOnlyModel.new
+    assert_equal 0, model.class.count
+    model.save
+    assert_equal 1, model.class.count
+    assert_equal nil, model.some_marked_column
+    MarkOnly.enabled = false
+    model.destroy
+    assert_equal 0, model.class.count
+    assert_equal 0, ActiveRecord::Base.connection.select_all("SELECT count(*) as c FROM #{model.class.table_name} WHERE id = '#{model.id}'").first['c']
   end
 
   def test_mark_only_instance_destroy_bang_if_supported
@@ -121,6 +153,26 @@ class MarkOnlyTest < Test::Unit::TestCase
     end
   end
 
+  def test_mark_only_disabled_instance_destroy_bang_if_supported
+    # destroy! implemented in Rails 4
+    unless MarkOnlyModel.new.respond_to?(:destroy!)
+      # skipping because model.destroy! not implemented
+      return
+    end
+
+    begin
+      model = MarkOnlyModel.new
+      assert_equal 0, model.class.count
+      model.save
+      assert_equal 1, model.class.count
+      assert_equal nil, model.some_marked_column
+      MarkOnly.enabled = false
+      model.destroy!
+      assert_equal 0, model.class.count
+      assert_equal 0, ActiveRecord::Base.connection.select_all("SELECT count(*) as c FROM #{model.class.table_name} WHERE id = '#{model.id}'").first['c']
+    end
+  end
+
   def test_mark_only_class_delete
     model = MarkOnlyModel.new
     assert_equal 0, model.class.count
@@ -136,6 +188,19 @@ class MarkOnlyTest < Test::Unit::TestCase
     assert_equal 1, ActiveRecord::Base.connection.select_all("SELECT count(*) as c FROM #{model.class.table_name} WHERE id = '#{model.id}' AND some_marked_column = '#{DELETED_MARK}'").first['c']
   end
 
+  def test_mark_only_disabled_class_delete
+    model = MarkOnlyModel.new
+    assert_equal 0, model.class.count
+    model.save
+    assert_equal 1, model.class.count
+    assert_equal nil, model.some_marked_column
+    assert_equal false, model.class.where(id: model.id).first.deleted?
+    MarkOnly.enabled = false
+    MarkOnlyModel.delete(model.id)
+    assert_equal 0, model.class.count
+    assert_equal 0, ActiveRecord::Base.connection.select_all("SELECT count(*) as c FROM #{model.class.table_name} WHERE id = '#{model.id}'").first['c']
+  end
+
   def test_mark_only_class_delete_all
     model = MarkOnlyModel.new
     assert_equal 0, model.class.count
@@ -147,6 +212,18 @@ class MarkOnlyTest < Test::Unit::TestCase
     # won't work unless you reload model: assert_equal DELETED_MARK, model.some_marked_column
     assert_equal DELETED_MARK, model.class.where(id: model.id).first.some_marked_column
     assert_equal 1, ActiveRecord::Base.connection.select_all("SELECT count(*) as c FROM #{model.class.table_name} WHERE id = '#{model.id}' AND some_marked_column = '#{DELETED_MARK}'").first['c']
+  end
+
+  def test_mark_only_disabled_class_delete_all
+    model = MarkOnlyModel.new
+    assert_equal 0, model.class.count
+    model.save
+    assert_equal 1, model.class.count
+    assert_equal nil, model.some_marked_column
+    MarkOnly.enabled = false
+    MarkOnlyModel.delete_all
+    assert_equal 0, model.class.count
+    assert_equal 0, ActiveRecord::Base.connection.select_all("SELECT count(*) as c FROM #{model.class.table_name} WHERE id = '#{model.id}'").first['c']
   end
 
   def test_mark_only_to_param_destroy
@@ -161,6 +238,18 @@ class MarkOnlyTest < Test::Unit::TestCase
     # won't work unless you reload model: assert_equal DELETED_MARK, model.some_marked_column
     assert_equal DELETED_MARK, model.class.where(id: model.id).first.some_marked_column
     assert_equal 1, ActiveRecord::Base.connection.select_all("SELECT count(*) as c FROM #{model.class.table_name} WHERE id = '#{model.id}' AND some_marked_column = '#{DELETED_MARK}'").first['c']
+  end
+
+  def test_mark_only_disabled_to_param_destroy
+    model = MarkOnlyModel.new
+    assert_equal 0, model.class.count
+    model.save
+    to_param = model.to_param
+    assert_equal 1, model.class.count
+    MarkOnly.enabled = false
+    model.destroy
+    assert_equal to_param, model.to_param
+    assert_equal 0, ActiveRecord::Base.connection.select_all("SELECT count(*) as c FROM #{model.class.table_name} WHERE id = '#{model.id}'").first['c']
   end
 
   def test_mark_only_scoping
@@ -194,6 +283,17 @@ class MarkOnlyTest < Test::Unit::TestCase
     assert_equal 1, parent.related_models.count
   end
 
+  def test_mark_only_disabled_has_many_destroy
+    parent = ParentModel.create
+    assert_equal 0, parent.related_models.count
+    child = parent.related_models.create
+    assert_equal 1, parent.related_models.count
+    MarkOnly.enabled = false
+    child.destroy
+    #?
+    assert_equal 0, parent.related_models.count
+  end
+
   def test_has_many_through_destroy
     employer = Employer.create
     employee = Employee.create
@@ -216,6 +316,29 @@ class MarkOnlyTest < Test::Unit::TestCase
     assert_equal 2, employer.employees.count
   end
 
+  def test_mark_only_disabled_has_many_through_destroy
+    employer = Employer.create
+    employee = Employee.create
+    assert_equal 0, employer.jobs.count
+    assert_equal 0, employer.employees.count
+    assert_equal 0, employee.jobs.count
+    assert_equal 0, employee.employers.count
+    job = Job.create :employer => employer, :employee => employee
+    assert_equal 1, employer.jobs.count
+    assert_equal 1, employer.employees.count
+    assert_equal 1, employee.jobs.count
+    assert_equal 1, employee.employers.count
+    employee2 = Employee.create
+    job2 = Job.create :employer => employer, :employee => employee2
+    MarkOnly.enabled = false
+    employee2.destroy
+    assert_equal 2, employer.jobs.count
+    assert_equal 1, employer.employees.count
+    job.destroy
+    assert_equal 1, employer.jobs.count
+    assert_equal 0, employer.employees.count
+  end
+
   def test_no_callback_on_instance_delete
     model = CallbackModel.new
     model.save
@@ -223,9 +346,25 @@ class MarkOnlyTest < Test::Unit::TestCase
     assert_equal nil, model.instance_variable_get(:@callback_called)
   end
 
+  def test_mark_only_disabled_no_callback_on_instance_delete
+    model = CallbackModel.new
+    model.save
+    MarkOnly.enabled = false
+    model.delete
+    assert_equal nil, model.instance_variable_get(:@callback_called)
+  end
+
   def test_does_callback_on_instance_destroy
     model = CallbackModel.new
     model.save
+    model.destroy
+    assert model.instance_variable_get(:@callback_called)
+  end
+
+  def test_mark_only_disabled_does_callback_on_instance_destroy
+    model = CallbackModel.new
+    model.save
+    MarkOnly.enabled = false
     model.destroy
     assert model.instance_variable_get(:@callback_called)
   end
@@ -244,6 +383,17 @@ class MarkOnlyTest < Test::Unit::TestCase
     assert_equal 1, ActiveRecord::Base.connection.select_all("SELECT count(*) as c FROM #{model.class.table_name} WHERE id = '#{model.id}' AND some_marked_column = '#{DELETED_MARK}'").first['c']
   end
 
+  def test_mark_only_disabled_where_delete_id
+    model = MarkOnlyModel.new
+    model.save
+    assert_equal 1, model.class.count
+    assert_equal nil, model.some_marked_column
+    MarkOnly.enabled = false
+    MarkOnlyModel.where('').delete(model.id)
+    assert_equal 0, model.class.count
+    assert_equal 0, ActiveRecord::Base.connection.select_all("SELECT count(*) as c FROM #{model.class.table_name} WHERE id = '#{model.id}'").first['c']
+  end
+
   def test_mark_only_where_delete_ids
     model = MarkOnlyModel.new
     model.save
@@ -254,6 +404,17 @@ class MarkOnlyTest < Test::Unit::TestCase
     # won't work unless you reload model: assert_equal DELETED_MARK, model.some_marked_column
     assert_equal DELETED_MARK, model.class.where(id: model.id).first.some_marked_column
     assert_equal 1, ActiveRecord::Base.connection.select_all("SELECT count(*) as c FROM #{model.class.table_name} WHERE id = '#{model.id}' AND some_marked_column = '#{DELETED_MARK}'").first['c']
+  end
+
+  def test_mark_only_disabled_where_delete_ids
+    model = MarkOnlyModel.new
+    model.save
+    assert_equal 1, model.class.count
+    assert_equal nil, model.some_marked_column
+    MarkOnly.enabled = false
+    MarkOnlyModel.where('').delete([model.id])
+    assert_equal 0, model.class.count
+    assert_equal 0, ActiveRecord::Base.connection.select_all("SELECT count(*) as c FROM #{model.class.table_name} WHERE id = '#{model.id}'").first['c']
   end
 
   def test_mark_only_where_delete_all
@@ -268,6 +429,17 @@ class MarkOnlyTest < Test::Unit::TestCase
     assert_equal 1, ActiveRecord::Base.connection.select_all("SELECT count(*) as c FROM #{model.class.table_name} WHERE id = '#{model.id}' AND some_marked_column = '#{DELETED_MARK}'").first['c']
   end
 
+  def test_mark_only_disabled_where_delete_all
+    model = MarkOnlyModel.new
+    model.save
+    assert_equal 1, model.class.count
+    assert_equal nil, model.some_marked_column
+    MarkOnly.enabled = false
+    MarkOnlyModel.where('').delete_all
+    assert_equal 0, model.class.count
+    assert_equal 0, ActiveRecord::Base.connection.select_all("SELECT count(*) as c FROM #{model.class.table_name} WHERE id = '#{model.id}'").first['c']
+  end
+
   def test_mark_only_where_destroy_id
     model = MarkOnlyModel.new
     model.save
@@ -280,6 +452,20 @@ class MarkOnlyTest < Test::Unit::TestCase
     assert_equal 1, ActiveRecord::Base.connection.select_all("SELECT count(*) as c FROM #{model.class.table_name} WHERE id = '#{model.id}' AND some_marked_column = '#{DELETED_MARK}'").first['c']
   end
 
+  def test_mark_only_disabled_where_destroy_id
+    model = MarkOnlyModel.new
+    model.save
+    assert_equal 1, model.class.count
+    assert_equal nil, model.some_marked_column
+    MarkOnly.enabled = false
+    #require 'tracer'
+    #Tracer.on do
+      MarkOnlyModel.where('').destroy(model.id)
+    #end
+    assert_equal 0, model.class.count
+    assert_equal 0, ActiveRecord::Base.connection.select_all("SELECT count(*) as c FROM #{model.class.table_name} WHERE id = '#{model.id}'").first['c']
+  end
+
   def test_mark_only_where_destroy_all
     model = MarkOnlyModel.new
     model.save
@@ -290,6 +476,17 @@ class MarkOnlyTest < Test::Unit::TestCase
     # won't work unless you reload model: assert_equal DELETED_MARK, model.some_marked_column
     assert_equal DELETED_MARK, model.class.where(id: model.id).first.some_marked_column
     assert_equal 1, ActiveRecord::Base.connection.select_all("SELECT count(*) as c FROM #{model.class.table_name} WHERE id = '#{model.id}' AND some_marked_column = '#{DELETED_MARK}'").first['c']
+  end
+
+  def test_mark_only_disabled_where_destroy_all
+    model = MarkOnlyModel.new
+    model.save
+    assert_equal 1, model.class.count
+    assert_equal nil, model.some_marked_column
+    MarkOnly.enabled = false
+    MarkOnlyModel.where('').destroy_all
+    assert_equal 0, model.class.count
+    assert_equal 0, ActiveRecord::Base.connection.select_all("SELECT count(*) as c FROM #{model.class.table_name} WHERE id = '#{model.id}'").first['c']
   end
 
 end
