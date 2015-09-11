@@ -2,7 +2,7 @@ require 'mark_only/version'
 
 module MarkOnly
   class << self
-    attr_accessor :debug, :deleted_value, :enabled
+    attr_accessor :active_scope_name, :debug, :deleted_scope_name, :deleted_value, :enabled
     def configure(&blk)
       class_eval(&blk)
     end
@@ -70,6 +70,9 @@ MarkOnly.configure do
   self.debug = false
   self.deleted_value = 'deleted'
   self.enabled = true
+  # these are unused unless scopes: true
+  self.active_scope_name = 'active'
+  self.deleted_scope_name = 'deleted'
 end
 
 class ActiveRecord::Relation
@@ -119,7 +122,7 @@ end
 
 class ActiveRecord::Base
 
-  def self.mark_only(col_name)
+  def self.mark_only(col_name, opts = {})
     raise "#{self} must call mark_only with a column name!" unless col_name
     class_attribute :mark_only_column, instance_writer: true
     self.mark_only_column = col_name.to_sym
@@ -134,6 +137,20 @@ class ActiveRecord::Base
     if defined?(ActiveRecord::VERSION::MAJOR) && ActiveRecord::VERSION::MAJOR > 3
       alias_method :mark_only_orig_destroy!, :destroy!
       include MarkOnlyRails4Extensions
+    end
+
+    if opts[:scopes]
+      raise "#{self} cannot call mark_only with scopes option unless MarkOnly active_scope_name and deleted_scope_name are configured" unless ::MarkOnly.active_scope_name && ::MarkOnly.deleted_scope_name
+      raise "#{self} cannot call mark_only with unsupported scopes value: #{opts[:scopes].inspect}" unless [true,false].include?(opts[:scopes])
+      if defined?(ActiveRecord::VERSION::MAJOR) && ActiveRecord::VERSION::MAJOR > 4
+        # Rails 5+
+        scope ::MarkOnly.active_scope_name, ->() { where(col_name => nil).or.not(col_name => ::MarkOnly.deleted_value) }
+      else
+        quoted_col_name = self.connection.quote_column_name col_name
+        scope ::MarkOnly.active_scope_name, ->() { where("#{quoted_col_name} IS NULL OR #{quoted_col_name} != ?", ::MarkOnly.deleted_value) }
+      end
+
+      scope ::MarkOnly.deleted_scope_name, ->() { where(col_name => ::MarkOnly.deleted_value) }
     end
   end
 

@@ -7,3 +7,4 @@ ruby-gemset
 ruby-version
 tmp/
 *.gem
+*emfile.lock

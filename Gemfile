@@ -2,6 +2,7 @@ source 'https://rubygems.org'
 
 gemspec
 
-gem 'appraisal', '~> 0.5.2'
-gem 'bundler', '>= 1.2.2'
+gem 'appraisal'
+gem 'bundler'
 gem 'sqlite3'
+gem 'minitest'

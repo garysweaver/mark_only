@@ -8,7 +8,7 @@ Want to only mark a column with a value when the record is deleted or destroyed,
 
 Once a record is marked, `deleted?`/`destroyed?` methods on a retrieved model instance return false.
 
-Tested with ActiveRecord 3.1.x, 3.2.x, and 4.0.x via travis and appraisal.
+Tested with ActiveRecord 4.1.x, 4.2.x via travis and appraisal.
 
 Code originally based on [Paranoia][paranoia] (by Ryan Bigg and others), but heavily modified.
 
@@ -54,6 +54,9 @@ MarkOnly.configure do
   self.debug = false
   # the value that should indicate that a record is deleted
   self.deleted_value = 'deleted'
+  # only needed if you use scopes:
+  self.active_scope_name = 'active'
+  self.deleted_scope_name = 'deleted'
 end
 
 ...
@@ -66,6 +69,16 @@ To disallow attempts to delete/destroy and instead update the specified column:
 ```ruby
 class Client < ActiveRecord::Base
   mark_only :some_column_to_mark
+
+  ...
+end
+```
+
+To also add scopes to filter by the marked column value, use the scopes option:
+
+```ruby
+class Client < ActiveRecord::Base
+  mark_only :some_column_to_mark, scopes: true
 
   ...
 end

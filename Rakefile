@@ -11,6 +11,6 @@ task :appraise do |t|
   if ENV['BUNDLE_GEMFILE'] =~ /gemfiles/
     load 'test/mark_only_test.rb'
   else
-    exec 'rake appraisal:install && rake appraisal'
+    exec 'appraisal install && rake appraisal'
   end
 end

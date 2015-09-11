@@ -1,4 +1,4 @@
-require 'test/unit'
+require 'minitest/autorun'
 require 'active_record'
 require File.expand_path(File.dirname(__FILE__) + "/../lib/mark_only")
 
@@ -11,6 +11,7 @@ FileUtils.rm_f DB_FILE
 ActiveRecord::Base.establish_connection :adapter => 'sqlite3', :database => DB_FILE
 ActiveRecord::Base.connection.execute 'CREATE TABLE parent_models (id INTEGER NOT NULL PRIMARY KEY, some_marked_column VARCHAR(32))'
 ActiveRecord::Base.connection.execute 'CREATE TABLE mark_only_models (id INTEGER NOT NULL PRIMARY KEY, some_marked_column VARCHAR(32))'
+ActiveRecord::Base.connection.execute 'CREATE TABLE mark_only_scopes_true_models (id INTEGER NOT NULL PRIMARY KEY, some_marked_column VARCHAR(32))'
 ActiveRecord::Base.connection.execute 'CREATE TABLE featureful_models (id INTEGER NOT NULL PRIMARY KEY, name VARCHAR(32), some_marked_column VARCHAR(32))'
 ActiveRecord::Base.connection.execute 'CREATE TABLE child_models (id INTEGER NOT NULL PRIMARY KEY, parent_model_id INTEGER, some_marked_column VARCHAR(32))'
 ActiveRecord::Base.connection.execute 'CREATE TABLE plain_models (id INTEGER NOT NULL PRIMARY KEY)'
@@ -20,17 +21,18 @@ ActiveRecord::Base.connection.execute 'CREATE TABLE employers (id INTEGER NOT NU
 ActiveRecord::Base.connection.execute 'CREATE TABLE employees (id INTEGER NOT NULL PRIMARY KEY, some_marked_column VARCHAR(32))'
 ActiveRecord::Base.connection.execute 'CREATE TABLE jobs (id INTEGER NOT NULL PRIMARY KEY, employer_id INTEGER NOT NULL, employee_id INTEGER NOT NULL, some_marked_column VARCHAR(32))'
 
-class MiniTest::Filter
+class Minitest::Filter
   def filter(bt)
     bt
   end
 end
 
-class MarkOnlyTest < Test::Unit::TestCase
+class MarkOnlyTest < Minitest::Test
 
   def setup
     ActiveRecord::Base.connection.execute 'DELETE FROM parent_models'
     ActiveRecord::Base.connection.execute 'DELETE FROM mark_only_models'
+    ActiveRecord::Base.connection.execute 'DELETE FROM mark_only_scopes_true_models'
     ActiveRecord::Base.connection.execute 'DELETE FROM featureful_models'
     ActiveRecord::Base.connection.execute 'DELETE FROM child_models'
     ActiveRecord::Base.connection.execute 'DELETE FROM plain_models'
@@ -84,7 +86,7 @@ class MarkOnlyTest < Test::Unit::TestCase
     assert_equal 0, model.class.count
     model.save
     assert_equal 1, model.class.count
-    assert_equal nil, model.some_marked_column
+    assert_nil model.some_marked_column
     model.delete
     assert_equal 1, model.class.count
     # won't work unless you reload model: assert_equal DELETED_MARK, model.some_marked_column
@@ -97,7 +99,7 @@ class MarkOnlyTest < Test::Unit::TestCase
     assert_equal 0, model.class.count
     model.save
     assert_equal 1, model.class.count
-    assert_equal nil, model.some_marked_column
+    assert_nil model.some_marked_column
     MarkOnly.enabled = false
     model.delete
     assert_equal 0, model.class.count
@@ -109,7 +111,7 @@ class MarkOnlyTest < Test::Unit::TestCase
     assert_equal 0, model.class.count
     model.save
     assert_equal 1, model.class.count
-    assert_equal nil, model.some_marked_column
+    assert_nil model.some_marked_column
     model.destroy
     assert_equal 1, model.class.count
     # won't work unless you reload model: assert_equal DELETED_MARK, model.some_marked_column
@@ -122,7 +124,7 @@ class MarkOnlyTest < Test::Unit::TestCase
     assert_equal 0, model.class.count
     model.save
     assert_equal 1, model.class.count
-    assert_equal nil, model.some_marked_column
+    assert_nil model.some_marked_column
     MarkOnly.enabled = false
     model.destroy
     assert_equal 0, model.class.count
@@ -141,7 +143,7 @@ class MarkOnlyTest < Test::Unit::TestCase
       assert_equal 0, model.class.count
       model.save
       assert_equal 1, model.class.count
-      assert_equal nil, model.some_marked_column
+      assert_nil model.some_marked_column
       # Rails 4 raises ActiveRecord::RecordNotDestroyed
       model.destroy!
       fail "should raise ActiveRecord::RecordNotDestroyed. destroy! implemented in #{model.method(:destroy!)}"
@@ -165,7 +167,7 @@ class MarkOnlyTest < Test::Unit::TestCase
       assert_equal 0, model.class.count
       model.save
       assert_equal 1, model.class.count
-      assert_equal nil, model.some_marked_column
+      assert_nil model.some_marked_column
       MarkOnly.enabled = false
       model.destroy!
       assert_equal 0, model.class.count
@@ -178,7 +180,7 @@ class MarkOnlyTest < Test::Unit::TestCase
     assert_equal 0, model.class.count
     model.save
     assert_equal 1, model.class.count
-    assert_equal nil, model.some_marked_column
+    assert_nil model.some_marked_column
     assert_equal false, model.class.where(id: model.id).first.deleted?
     MarkOnlyModel.delete(model.id)
     assert_equal 1, model.class.count
@@ -193,7 +195,7 @@ class MarkOnlyTest < Test::Unit::TestCase
     assert_equal 0, model.class.count
     model.save
     assert_equal 1, model.class.count
-    assert_equal nil, model.some_marked_column
+    assert_nil model.some_marked_column
     assert_equal false, model.class.where(id: model.id).first.deleted?
     MarkOnly.enabled = false
     MarkOnlyModel.delete(model.id)
@@ -206,7 +208,7 @@ class MarkOnlyTest < Test::Unit::TestCase
     assert_equal 0, model.class.count
     model.save
     assert_equal 1, model.class.count
-    assert_equal nil, model.some_marked_column
+    assert_nil model.some_marked_column
     MarkOnlyModel.delete_all
     assert_equal 1, model.class.count
     # won't work unless you reload model: assert_equal DELETED_MARK, model.some_marked_column
@@ -219,7 +221,7 @@ class MarkOnlyTest < Test::Unit::TestCase
     assert_equal 0, model.class.count
     model.save
     assert_equal 1, model.class.count
-    assert_equal nil, model.some_marked_column
+    assert_nil model.some_marked_column
     MarkOnly.enabled = false
     MarkOnlyModel.delete_all
     assert_equal 0, model.class.count
@@ -233,7 +235,7 @@ class MarkOnlyTest < Test::Unit::TestCase
     to_param = model.to_param
     assert_equal 1, model.class.count
     model.destroy
-    assert_not_equal nil, model.to_param
+    refute_nil model.to_param
     assert_equal to_param, model.to_param
     # won't work unless you reload model: assert_equal DELETED_MARK, model.some_marked_column
     assert_equal DELETED_MARK, model.class.where(id: model.id).first.some_marked_column
@@ -343,7 +345,7 @@ class MarkOnlyTest < Test::Unit::TestCase
     model = CallbackModel.new
     model.save
     model.delete
-    assert_equal nil, model.instance_variable_get(:@callback_called)
+    assert_nil model.instance_variable_get(:@callback_called)
   end
 
   def test_mark_only_disabled_no_callback_on_instance_delete
@@ -351,7 +353,7 @@ class MarkOnlyTest < Test::Unit::TestCase
     model.save
     MarkOnly.enabled = false
     model.delete
-    assert_equal nil, model.instance_variable_get(:@callback_called)
+    assert_nil model.instance_variable_get(:@callback_called)
   end
 
   def test_does_callback_on_instance_destroy
@@ -375,7 +377,7 @@ class MarkOnlyTest < Test::Unit::TestCase
     model = MarkOnlyModel.new
     model.save
     assert_equal 1, model.class.count
-    assert_equal nil, model.some_marked_column
+    assert_nil model.some_marked_column
     MarkOnlyModel.where('').delete(model.id)
     assert_equal 1, model.class.count
     # won't work unless you reload model: assert_equal DELETED_MARK, model.some_marked_column
@@ -387,7 +389,7 @@ class MarkOnlyTest < Test::Unit::TestCase
     model = MarkOnlyModel.new
     model.save
     assert_equal 1, model.class.count
-    assert_equal nil, model.some_marked_column
+    assert_nil model.some_marked_column
     MarkOnly.enabled = false
     MarkOnlyModel.where('').delete(model.id)
     assert_equal 0, model.class.count
@@ -398,7 +400,7 @@ class MarkOnlyTest < Test::Unit::TestCase
     model = MarkOnlyModel.new
     model.save
     assert_equal 1, model.class.count
-    assert_equal nil, model.some_marked_column
+    assert_nil model.some_marked_column
     MarkOnlyModel.where('').delete([model.id])
     assert_equal 1, model.class.count
     # won't work unless you reload model: assert_equal DELETED_MARK, model.some_marked_column
@@ -410,7 +412,7 @@ class MarkOnlyTest < Test::Unit::TestCase
     model = MarkOnlyModel.new
     model.save
     assert_equal 1, model.class.count
-    assert_equal nil, model.some_marked_column
+    assert_nil model.some_marked_column
     MarkOnly.enabled = false
     MarkOnlyModel.where('').delete([model.id])
     assert_equal 0, model.class.count
@@ -421,7 +423,7 @@ class MarkOnlyTest < Test::Unit::TestCase
     model = MarkOnlyModel.new
     model.save
     assert_equal 1, model.class.count
-    assert_equal nil, model.some_marked_column
+    assert_nil model.some_marked_column
     MarkOnlyModel.where('').delete_all
     assert_equal 1, model.class.count
     # won't work unless you reload model: assert_equal DELETED_MARK, model.some_marked_column
@@ -433,7 +435,7 @@ class MarkOnlyTest < Test::Unit::TestCase
     model = MarkOnlyModel.new
     model.save
     assert_equal 1, model.class.count
-    assert_equal nil, model.some_marked_column
+    assert_nil model.some_marked_column
     MarkOnly.enabled = false
     MarkOnlyModel.where('').delete_all
     assert_equal 0, model.class.count
@@ -444,7 +446,7 @@ class MarkOnlyTest < Test::Unit::TestCase
     model = MarkOnlyModel.new
     model.save
     assert_equal 1, model.class.count
-    assert_equal nil, model.some_marked_column
+    assert_nil model.some_marked_column
     MarkOnlyModel.where('').destroy(model.id)
     assert_equal 1, model.class.count
     # won't work unless you reload model: assert_equal DELETED_MARK, model.some_marked_column
@@ -456,7 +458,7 @@ class MarkOnlyTest < Test::Unit::TestCase
     model = MarkOnlyModel.new
     model.save
     assert_equal 1, model.class.count
-    assert_equal nil, model.some_marked_column
+    assert_nil model.some_marked_column
     MarkOnly.enabled = false
     #require 'tracer'
     #Tracer.on do
@@ -470,7 +472,7 @@ class MarkOnlyTest < Test::Unit::TestCase
     model = MarkOnlyModel.new
     model.save
     assert_equal 1, model.class.count
-    assert_equal nil, model.some_marked_column
+    assert_nil model.some_marked_column
     MarkOnlyModel.where('').destroy_all
     assert_equal 1, model.class.count
     # won't work unless you reload model: assert_equal DELETED_MARK, model.some_marked_column
@@ -482,11 +484,29 @@ class MarkOnlyTest < Test::Unit::TestCase
     model = MarkOnlyModel.new
     model.save
     assert_equal 1, model.class.count
-    assert_equal nil, model.some_marked_column
+    assert_nil model.some_marked_column
     MarkOnly.enabled = false
     MarkOnlyModel.where('').destroy_all
     assert_equal 0, model.class.count
     assert_equal 0, ActiveRecord::Base.connection.select_all("SELECT count(*) as c FROM #{model.class.table_name} WHERE id = '#{model.id}'").first['c']
+  end
+
+  def test_mark_only_scopes_and_instance_delete
+    model = MarkOnlyScopesTrueModel.new
+    model.save
+    assert_nil model.some_marked_column
+    assert_equal 1, MarkOnlyScopesTrueModel.all.count
+    assert_equal 1, MarkOnlyScopesTrueModel.active.count
+    assert_equal 0, MarkOnlyScopesTrueModel.deleted.count
+    model.some_marked_column = 'active'
+    model.save
+    assert_equal 1, MarkOnlyScopesTrueModel.all.count
+    assert_equal 1, MarkOnlyScopesTrueModel.active.count
+    assert_equal 0, MarkOnlyScopesTrueModel.deleted.count
+    model.delete
+    refute_nil model.some_marked_column
+    assert_equal 0, MarkOnlyScopesTrueModel.active.count
+    assert_equal 1, MarkOnlyScopesTrueModel.deleted.count
   end
 
 end
@@ -544,3 +564,6 @@ class CallbackModel < ActiveRecord::Base
   before_destroy {|model| model.instance_variable_set :@callback_called, true }
 end
 
+class MarkOnlyScopesTrueModel < ActiveRecord::Base
+  mark_only :some_marked_column, scopes: true
+end
